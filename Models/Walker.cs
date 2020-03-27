@@ -5,16 +5,10 @@ using System.Threading.Tasks;
 
 namespace DoggyDistance.Models
 {
-    public class DogOwner
+    public class Walker
     {
         public int Id { get; set; }
-        public string OwnerName { get; set; }
-        public string OwnerAddress { get; set; }
+        public string WalkerName { get; set; }
         public int NeighborhoodId { get; set; }
-
-        public string PhoneNumber { get; set; }
-
-        public List<Dog> dogs { get; set; }
-
     }
 }

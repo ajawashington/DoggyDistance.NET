@@ -13,7 +13,6 @@ namespace DoggyDistance.Models
         public int DogOwnerId { get; set; }
          public string OwnerName { get; set; }
         public string Notes { get; set; }
-        public DogOwner DogOwner { get; set; }
     }
 }
 
