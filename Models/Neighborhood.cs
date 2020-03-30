@@ -11,7 +11,8 @@ namespace DoggyDistance.Models
 
         public string NeighborhoodName { get; set; }
 
-        public List<DogOwner> DogOwners { get; set; }
+        //public List<DogOwner> DogOwners { get; set; }
+        //public List<Walker> Walkers { get; set;  }
     
     }
 }

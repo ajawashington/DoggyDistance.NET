@@ -14,7 +14,7 @@ namespace DoggyDistance.Models
 
         public string PhoneNumber { get; set; }
 
-        public List<Dog> dogs { get; set; }
+        //public List<Dog> DogsByOwner { get; set; }
 
     }
 }

@@ -14,11 +14,11 @@ namespace DoggyDistance.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class DogController : ControllerBase
+    public class WalkController : ControllerBase
     {
         private readonly IConfiguration _config;
 
-        public DogController(IConfiguration config)
+        public WalkController(IConfiguration config)
         {
             _config = config;
         }
@@ -33,10 +33,10 @@ namespace DoggyDistance.Controllers
 
         [HttpGet]
         public async Task<IActionResult> Get(
-            [FromQuery] string dogName,
-            [FromQuery] string breed,
-            [FromQuery] int? dogOwnerId,
-            [FromQuery] string notes)
+            [FromQuery] int? walkDuration,
+            [FromQuery] DateTime? date,
+            [FromQuery] int? dogId,
+            [FromQuery] int? walkerId)
         {
             using (SqlConnection conn = Connection)
             {
@@ -44,66 +44,66 @@ namespace DoggyDistance.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                        SELECT Id, DogName, Breed, DogOwnerId, Notes FROM Dog WHERE 1 = 1";
+                        SELECT Id, WalkDuration, Date, DogId, WalkerId FROM Walks WHERE 1 = 1";
 
-                    if (dogName != null )
+                    if (walkDuration != null)
                     {
-                        cmd.CommandText += " AND DogName LIKE @dogName";
-                        cmd.Parameters.Add(new SqlParameter("@dogName", "%" + dogName + "%"));
+                        cmd.CommandText += " AND WalkDuration = @walkDuration";
+                        cmd.Parameters.Add(new SqlParameter("@walkDuration", "%" + walkDuration + "%"));
                     }
 
-                    if (breed != null )
+                    if  (date != null)
                     {
-                        cmd.CommandText += " AND Breed LIKE @breed";
-                        cmd.Parameters.Add(new SqlParameter("@breed", "%" + breed + "%"));
+                        cmd.CommandText += " AND Date = @date";
+                        cmd.Parameters.Add(new SqlParameter(" date", "%" + date + "%"));
                     }
 
-                    if (dogOwnerId != null )
+                    if (dogId != null)
                     {
-                        cmd.CommandText += " AND DogOwnerId = @dogOwnerId";
-                        cmd.Parameters.Add(new SqlParameter("@dogOwnerId", dogOwnerId));
+                        cmd.CommandText += " AND DogId = @dogId";
+                        cmd.Parameters.Add(new SqlParameter("@dogId", dogId));
                     }
 
-                    if (notes != null )
+                    if (walkerId != null)
                     {
-                        cmd.CommandText += " AND Notes LIKE @notes";
-                        cmd.Parameters.Add(new SqlParameter("@notes", "%" + notes + "%"));
+                        cmd.CommandText += " AND WalkerId = @walkerId";
+                        cmd.Parameters.Add(new SqlParameter("@walkerId", walkerId));
                     }
 
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    List<Dog> dogs = new List<Dog>();
+                    List<Walk> walks = new List<Walk>();
 
                     while (reader.Read())
                     {
                         int id = reader.GetInt32(reader.GetOrdinal("Id"));
-                        int dogOwnId = reader.GetInt32(reader.GetOrdinal("DogOwnerId"));
-                        string dogNameValue = reader.GetString(reader.GetOrdinal("DogName"));
-                        string breedValue = reader.GetString(reader.GetOrdinal("Breed"));
-                        string notesValue = reader.GetString(reader.GetOrdinal("Notes"));
-                        
-                        Dog dog = new Dog
+                        int dogIdValue = reader.GetInt32(reader.GetOrdinal("DogId"));
+                        int walkDurationValue = reader.GetInt32(reader.GetOrdinal("WalkDuration"));
+                        DateTime dateValue = reader.GetDateTime(reader.GetOrdinal("Date"));
+                        int walkerIdValue = reader.GetInt32(reader.GetOrdinal("WalkerId"));
+
+                        Walk walk = new Walk
                         {
                             Id = id,
-                            DogName = dogNameValue, 
-                            Breed = breedValue, 
-                            Notes = notesValue, 
-                            DogOwnerId = dogOwnId
+                            WalkDuration = walkDurationValue,
+                            Date = dateValue,
+                            WalkerId = walkerIdValue,
+                            DogId = dogIdValue
 
                         };
 
-                        dogs.Add(dog);
+                        walks.Add(walk);
                     }
                     reader.Close();
 
-                    return Ok(dogs);
+                    return Ok(walks);
 
                 }
             }
         }
 
 
-        [HttpGet("{id}", Name = "GetDog")]
+        [HttpGet("{id}", Name = "GetWalk")]
         public async Task<IActionResult> Get([FromRoute] int id)
         {
             using (SqlConnection conn = Connection)
@@ -112,57 +112,57 @@ namespace DoggyDistance.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                     SELECT Id, DogName, Breed, DogOwnerId, Notes FROM Dog
+                     SELECT Id, WalkDuration, Date, DogId, WalkerId FROM Walks
                         WHERE Id = @id";
                     cmd.Parameters.Add(new SqlParameter("@id", id));
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    Dog dog = null;
+                    Walk walk = null;
 
                     if (reader.Read())
                     {
-                        dog = new Dog
+                        walk = new Walk
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            DogName = reader.GetString(reader.GetOrdinal("DogName")),
-                            Breed = reader.GetString(reader.GetOrdinal("Breed")),
-                            Notes = reader.GetString(reader.GetOrdinal("Notes")),
-                            DogOwnerId = reader.GetInt32(reader.GetOrdinal("DogOwnerId"))
+                            WalkDuration = reader.GetInt32(reader.GetOrdinal("WalkDuration")),
+                            Date = reader.GetDateTime(reader.GetOrdinal("Date")),
+                            WalkerId = reader.GetInt32(reader.GetOrdinal("WalkerId")),
+                            DogId = reader.GetInt32(reader.GetOrdinal("DogId"))
                         };
                     }
                     reader.Close();
 
-                    return Ok(dog);
+                    return Ok(walk);
                 }
             }
         }
 
         [HttpPost]
- 
-        public async Task<IActionResult> Post([FromBody] Dog dog)
+
+        public async Task<IActionResult> Post([FromBody] Walk walk)
         {
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"INSERT INTO Dog (DogName, Breed, DogOwnerId, Notes)
+                    cmd.CommandText = @"INSERT INTO Walks (WalkDuration, Date, DogId, WalkerId)
                                         OUTPUT INSERTED.Id
-                                        VALUES (@DogName, @Breed, @OwnerId, @Notes)";
-                    cmd.Parameters.Add(new SqlParameter("@DogName", dog.DogName));
-                    cmd.Parameters.Add(new SqlParameter("@Breed", dog.Breed));
-                    cmd.Parameters.Add(new SqlParameter("@DogOwnerId", dog.DogOwnerId));
-                    cmd.Parameters.Add(new SqlParameter("@Notes", dog.Notes));
+                                        VALUES (@WalkDuration, @Date, @DogId, @WalkerId)";
+                    cmd.Parameters.Add(new SqlParameter("@WalkDuration", walk.WalkDuration));
+                    cmd.Parameters.Add(new SqlParameter("@Date", walk.Date));
+                    cmd.Parameters.Add(new SqlParameter("@DogId", walk.DogId));
+                    cmd.Parameters.Add(new SqlParameter("@WalkerId", walk.WalkerId));
 
                     int newId = (int)cmd.ExecuteScalar();
-                    dog.Id = newId;
-                    return CreatedAtRoute("GetDog", new { id = newId }, dog);
+                    walk.Id = newId;
+                    return CreatedAtRoute("GetWalk", new { id = newId }, walk);
                 }
             }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put([FromRoute] int id, [FromBody] Dog dog)
+        public async Task<IActionResult> Put([FromRoute] int id, [FromBody] Walk walk)
         {
             try
             {
@@ -171,16 +171,16 @@ namespace DoggyDistance.Controllers
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
-                        cmd.CommandText = @"UPDATE Dog
-                                            SET DogName = @DogName,
-                                                Breed = @Breed,
-                                                Notes = @Notes
-                                                DogOwnerId = @DogOwnerId
+                        cmd.CommandText = @"UPDATE Walks
+                                            SET WalkDuration = @WalkDuration,
+                                                Date = @Date,
+                                                WalkerId = @WalkerId
+                                                DogId = @DogId
                                             WHERE Id = @id";
-                        cmd.Parameters.Add(new SqlParameter("@DogName", dog.DogName));
-                        cmd.Parameters.Add(new SqlParameter("@Breed", dog.Breed));
-                        cmd.Parameters.Add(new SqlParameter("@Notes", dog.Notes));
-                        cmd.Parameters.Add(new SqlParameter("@OwnerId", dog.DogOwnerId));
+                        cmd.Parameters.Add(new SqlParameter("@WalkDuration", walk.WalkDuration));
+                        cmd.Parameters.Add(new SqlParameter("@Date", walk.Date));
+                        cmd.Parameters.Add(new SqlParameter("@WalkerId", walk.WalkerId));
+                        cmd.Parameters.Add(new SqlParameter("@DogId", walk.DogId));
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         int rowsAffected = cmd.ExecuteNonQuery();
@@ -194,7 +194,7 @@ namespace DoggyDistance.Controllers
             }
             catch (Exception)
             {
-                if (!DogExists(id))
+                if (!WalkExists(id))
                 {
                     return NotFound();
                 }
@@ -215,7 +215,7 @@ namespace DoggyDistance.Controllers
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
-                        cmd.CommandText = @"DELETE FROM Dog WHERE Id = @id";
+                        cmd.CommandText = @"DELETE FROM Walks WHERE Id = @id";
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         int rowsAffected = cmd.ExecuteNonQuery();
@@ -229,7 +229,7 @@ namespace DoggyDistance.Controllers
             }
             catch (Exception)
             {
-                if (!DogExists(id))
+                if (!WalkExists(id))
                 {
                     return NotFound();
                 }
@@ -240,7 +240,7 @@ namespace DoggyDistance.Controllers
             }
         }
 
-        private bool DogExists(int id)
+        private bool WalkExists(int id)
         {
             using (SqlConnection conn = Connection)
             {
@@ -248,8 +248,8 @@ namespace DoggyDistance.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                        SELECT Id, DogName, Breed, DogOwnerId, Notes
-                        FROM Dog
+                        SELECT Id, WalkDuration, Date, DogId, WalkerId
+                        FROM Walks
                         WHERE Id = @id";
                     cmd.Parameters.Add(new SqlParameter("@id", id));
 

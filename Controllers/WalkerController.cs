@@ -32,25 +32,45 @@ namespace DoggyDistance.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> Get(
+           [FromQuery] string walkerName,
+           [FromQuery] int? neighborhoodId)
         {
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = " SELECT Id, WalkerName, NeighborhoodId FROM Walker ";
+                    cmd.CommandText = @" SELECT Id, WalkerName, NeighborhoodId FROM Walker WHERE 1 = 1";
+
+                    if (walkerName != null)
+                    {
+                        cmd.CommandText += " AND WalkerName LIKE @walkerName";
+                        cmd.Parameters.Add(new SqlParameter("@walkerName", "%" + walkerName + "%"));
+                    }
+
+                    if (neighborhoodId != null)
+                    {
+                        cmd.CommandText += " AND NeighborhoodId = @neighborhoodId";
+                        cmd.Parameters.Add(new SqlParameter("@neighborhoodId", neighborhoodId));
+                    }
+
                     SqlDataReader reader = cmd.ExecuteReader();
+
                     List<Walker> walkers = new List<Walker>();
 
                     while (reader.Read())
                     {
+                        int id = reader.GetInt32(reader.GetOrdinal("Id"));
+                        string walkerNameValue = reader.GetString(reader.GetOrdinal("WalkerName"));
+                        int hoodId = reader.GetInt32(reader.GetOrdinal("NeighborhoodId"));
+
                         Walker walker = new Walker
                         {
-                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            WalkerName = reader.GetString(reader.GetOrdinal("WalkerName")),
-                            NeighborhoodId = reader.GetInt32(reader.GetOrdinal("NeighborhoodId"))
 
+                            Id = id,
+                            WalkerName = walkerNameValue,
+                            NeighborhoodId = hoodId
                         };
 
                         walkers.Add(walker);
@@ -62,7 +82,6 @@ namespace DoggyDistance.Controllers
                 }
             }
         }
-
 
         [HttpGet("{id}", Name = "GetWalker")]
         public async Task<IActionResult> Get([FromRoute] int id)

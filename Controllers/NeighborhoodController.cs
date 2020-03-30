@@ -14,11 +14,11 @@ namespace DoggyDistance.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class DogController : ControllerBase
+    public class NeighborhoodController : ControllerBase
     {
         private readonly IConfiguration _config;
 
-        public DogController(IConfiguration config)
+        public NeighborhoodController(IConfiguration config)
         {
             _config = config;
         }
@@ -33,77 +33,48 @@ namespace DoggyDistance.Controllers
 
         [HttpGet]
         public async Task<IActionResult> Get(
-            [FromQuery] string dogName,
-            [FromQuery] string breed,
-            [FromQuery] int? dogOwnerId,
-            [FromQuery] string notes)
+           [FromQuery] string neighborhoodName)
         {
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"
-                        SELECT Id, DogName, Breed, DogOwnerId, Notes FROM Dog WHERE 1 = 1";
+                    cmd.CommandText = @" SELECT Id, NeighborhoodName FROM Neighborhood WHERE 1 = 1";
 
-                    if (dogName != null )
+                    if (neighborhoodName != null)
                     {
-                        cmd.CommandText += " AND DogName LIKE @dogName";
-                        cmd.Parameters.Add(new SqlParameter("@dogName", "%" + dogName + "%"));
-                    }
-
-                    if (breed != null )
-                    {
-                        cmd.CommandText += " AND Breed LIKE @breed";
-                        cmd.Parameters.Add(new SqlParameter("@breed", "%" + breed + "%"));
-                    }
-
-                    if (dogOwnerId != null )
-                    {
-                        cmd.CommandText += " AND DogOwnerId = @dogOwnerId";
-                        cmd.Parameters.Add(new SqlParameter("@dogOwnerId", dogOwnerId));
-                    }
-
-                    if (notes != null )
-                    {
-                        cmd.CommandText += " AND Notes LIKE @notes";
-                        cmd.Parameters.Add(new SqlParameter("@notes", "%" + notes + "%"));
+                        cmd.CommandText += " AND NeighborhoodName LIKE @neighborhoodName";
+                        cmd.Parameters.Add(new SqlParameter("@neighborhoodName", "%" + neighborhoodName + "%"));
                     }
 
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    List<Dog> dogs = new List<Dog>();
+                    List<Neighborhood> hoods = new List<Neighborhood>();
 
                     while (reader.Read())
                     {
                         int id = reader.GetInt32(reader.GetOrdinal("Id"));
-                        int dogOwnId = reader.GetInt32(reader.GetOrdinal("DogOwnerId"));
-                        string dogNameValue = reader.GetString(reader.GetOrdinal("DogName"));
-                        string breedValue = reader.GetString(reader.GetOrdinal("Breed"));
-                        string notesValue = reader.GetString(reader.GetOrdinal("Notes"));
-                        
-                        Dog dog = new Dog
-                        {
-                            Id = id,
-                            DogName = dogNameValue, 
-                            Breed = breedValue, 
-                            Notes = notesValue, 
-                            DogOwnerId = dogOwnId
+                        string neighborhoodNameValue = reader.GetString(reader.GetOrdinal("NeighborhoodName"));
 
+                        Neighborhood hood = new Neighborhood
+                        {
+
+                            Id = id,
+                            NeighborhoodName = neighborhoodNameValue,
                         };
 
-                        dogs.Add(dog);
+                        hoods.Add(hood);
                     }
                     reader.Close();
 
-                    return Ok(dogs);
+                    return Ok(hoods);
 
                 }
             }
         }
 
-
-        [HttpGet("{id}", Name = "GetDog")]
+        [HttpGet("{id}", Name = "GetNeighborhood")]
         public async Task<IActionResult> Get([FromRoute] int id)
         {
             using (SqlConnection conn = Connection)
@@ -112,57 +83,50 @@ namespace DoggyDistance.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                     SELECT Id, DogName, Breed, DogOwnerId, Notes FROM Dog
+                     SELECT Id, NeighborhoodName, NeighborhoodId FROM Neighborhood
                         WHERE Id = @id";
                     cmd.Parameters.Add(new SqlParameter("@id", id));
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    Dog dog = null;
+                    Neighborhood hood = null;
 
                     if (reader.Read())
                     {
-                        dog = new Dog
+                        hood = new Neighborhood
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            DogName = reader.GetString(reader.GetOrdinal("DogName")),
-                            Breed = reader.GetString(reader.GetOrdinal("Breed")),
-                            Notes = reader.GetString(reader.GetOrdinal("Notes")),
-                            DogOwnerId = reader.GetInt32(reader.GetOrdinal("DogOwnerId"))
+                            NeighborhoodName = reader.GetString(reader.GetOrdinal("NeighborhoodName")),
                         };
                     }
                     reader.Close();
 
-                    return Ok(dog);
+                    return Ok(hood);
                 }
             }
         }
 
         [HttpPost]
- 
-        public async Task<IActionResult> Post([FromBody] Dog dog)
+        public async Task<IActionResult> Post([FromBody] Neighborhood hood)
         {
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"INSERT INTO Dog (DogName, Breed, DogOwnerId, Notes)
+                    cmd.CommandText = @"INSERT INTO Neighborhood (NeighborhoodName)
                                         OUTPUT INSERTED.Id
-                                        VALUES (@DogName, @Breed, @OwnerId, @Notes)";
-                    cmd.Parameters.Add(new SqlParameter("@DogName", dog.DogName));
-                    cmd.Parameters.Add(new SqlParameter("@Breed", dog.Breed));
-                    cmd.Parameters.Add(new SqlParameter("@DogOwnerId", dog.DogOwnerId));
-                    cmd.Parameters.Add(new SqlParameter("@Notes", dog.Notes));
+                                        VALUES (@NeighborhoodName, @NeighborhoodId)";
+                    cmd.Parameters.Add(new SqlParameter("@NeighborhoodName", hood.NeighborhoodName));
 
                     int newId = (int)cmd.ExecuteScalar();
-                    dog.Id = newId;
-                    return CreatedAtRoute("GetDog", new { id = newId }, dog);
+                    hood.Id = newId;
+                    return CreatedAtRoute("GetNeighborhood", new { id = newId }, hood);
                 }
             }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put([FromRoute] int id, [FromBody] Dog dog)
+        public async Task<IActionResult> Put([FromRoute] int id, [FromBody] Neighborhood hood)
         {
             try
             {
@@ -171,17 +135,14 @@ namespace DoggyDistance.Controllers
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
-                        cmd.CommandText = @"UPDATE Dog
-                                            SET DogName = @DogName,
-                                                Breed = @Breed,
-                                                Notes = @Notes
-                                                DogOwnerId = @DogOwnerId
+
+                        cmd.CommandText = @"UPDATE Neighborhood
+                                            SET NeighborhoodName = @NeighborhoodName
                                             WHERE Id = @id";
-                        cmd.Parameters.Add(new SqlParameter("@DogName", dog.DogName));
-                        cmd.Parameters.Add(new SqlParameter("@Breed", dog.Breed));
-                        cmd.Parameters.Add(new SqlParameter("@Notes", dog.Notes));
-                        cmd.Parameters.Add(new SqlParameter("@OwnerId", dog.DogOwnerId));
+                        cmd.Parameters.Add(new SqlParameter("@NeighborhoodName", hood.NeighborhoodName));
                         cmd.Parameters.Add(new SqlParameter("@id", id));
+
+
 
                         int rowsAffected = cmd.ExecuteNonQuery();
                         if (rowsAffected > 0)
@@ -194,7 +155,7 @@ namespace DoggyDistance.Controllers
             }
             catch (Exception)
             {
-                if (!DogExists(id))
+                if (!NeighborhoodExists(id))
                 {
                     return NotFound();
                 }
@@ -215,7 +176,7 @@ namespace DoggyDistance.Controllers
                     conn.Open();
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
-                        cmd.CommandText = @"DELETE FROM Dog WHERE Id = @id";
+                        cmd.CommandText = @"DELETE FROM Neighborhood WHERE Id = @id";
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         int rowsAffected = cmd.ExecuteNonQuery();
@@ -229,7 +190,7 @@ namespace DoggyDistance.Controllers
             }
             catch (Exception)
             {
-                if (!DogExists(id))
+                if (!NeighborhoodExists(id))
                 {
                     return NotFound();
                 }
@@ -240,7 +201,7 @@ namespace DoggyDistance.Controllers
             }
         }
 
-        private bool DogExists(int id)
+        private bool NeighborhoodExists(int id)
         {
             using (SqlConnection conn = Connection)
             {
@@ -248,8 +209,8 @@ namespace DoggyDistance.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                        SELECT Id, DogName, Breed, DogOwnerId, Notes
-                        FROM Dog
+                        SELECT Id, NeighborhoodName 
+                        FROM Neighborhood
                         WHERE Id = @id";
                     cmd.Parameters.Add(new SqlParameter("@id", id));
 
@@ -260,3 +221,4 @@ namespace DoggyDistance.Controllers
         }
     }
 }
+
